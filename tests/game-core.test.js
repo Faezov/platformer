@@ -9,75 +9,44 @@ function tick(state, seconds, input) {
   }
 }
 
-test("upgrading the keep spends coins and raises the level", () => {
+test("the player can move right and face that direction", () => {
   const state = Core.createInitialState(123);
-  state.player.x = 0;
+  const start = state.player.x;
 
-  const target = Core.getNearestInteractable(state);
-  assert.equal(target.kind, "upgrade");
-  assert.equal(target.id, "keep");
-  assert.equal(target.cost, 7);
+  tick(state, 0.5, { right: true });
 
-  assert.equal(Core.performAction(state), true);
-  const keep = state.structures.find((structure) => structure.id === "keep");
-  assert.equal(keep.level, 2);
-  assert.equal(state.player.coins, 1);
-  assert.equal(state.stats.coinsSpent, 7);
+  assert.ok(state.player.x > start);
+  assert.equal(state.player.facing, 1);
 });
 
-test("hiring a traveler converts them into a useful citizen", () => {
-  const state = Core.createInitialState(456);
-  const traveler = state.citizens.find((citizen) => citizen.role === "vagrant");
-  state.player.x = traveler.x;
-  state.player.coins = 3;
+test("sprinting moves faster and spends stamina", () => {
+  const walking = Core.createInitialState(456);
+  const sprinting = Core.createInitialState(456);
 
-  assert.equal(Core.performAction(state), true);
-  assert.notEqual(traveler.role, "vagrant");
-  assert.equal(state.player.coins, 2);
-  assert.equal(Core.getCounts(state).total, 3);
-  assert.equal(state.stats.peopleHired, 1);
+  tick(walking, 1, { right: true });
+  tick(sprinting, 1, { right: true, sprint: true });
+
+  assert.ok(sprinting.player.x > walking.player.x);
+  assert.ok(sprinting.player.stamina < walking.player.stamina);
 });
 
-test("the first night starts a wave", () => {
+test("time advances into night", () => {
   const state = Core.createInitialState(789);
 
   tick(state, Core.NIGHT_START + 0.2);
 
   assert.equal(state.phase, "night");
-  assert.equal(state.waveDay, 1);
-  assert.ok(state.enemies.length > 0);
+  assert.equal(state.day, 1);
 });
 
-test("guards can defeat a nearby enemy and drop coins", () => {
-  const state = Core.createInitialState(101112);
-  state.enemies.push({
-    id: "enemy-test",
-    x: 150,
-    side: 1,
-    hp: 1,
-    maxHp: 1,
-    speed: 0,
-    cooldown: 0,
-    loot: 0,
-    stunned: 0
-  });
-
-  tick(state, 1.2);
-
-  assert.equal(state.enemies.length, 0);
-  assert.ok(state.drops.length > 0);
-  assert.equal(state.stats.enemiesDefeated, 1);
-});
-
-test("serializing and reviving preserves campaign progress", () => {
+test("serializing and reviving preserves player progress", () => {
   const state = Core.createInitialState(31415);
-  state.player.x = 0;
-  Core.performAction(state);
-  tick(state, 2);
+  tick(state, 2, { right: true, sprint: true });
 
   const revived = Core.reviveLoadedState(Core.serializableState(state));
+
   assert.equal(revived.version, Core.SAVE_VERSION);
   assert.equal(revived.day, state.day);
-  assert.equal(revived.player.coins, state.player.coins);
-  assert.equal(revived.structures.find((structure) => structure.id === "keep").level, 2);
+  assert.equal(revived.player.x, state.player.x);
+  assert.equal(revived.player.stamina, state.player.stamina);
 });

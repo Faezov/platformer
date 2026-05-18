@@ -1,6 +1,6 @@
 # Crownline Vale
 
-Crownline Vale is an original side-scrolling crown defense prototype built for desktop Linux. You ride between camps, spend coins to hire travelers, raise walls and towers, grow farms, and survive night waves from the forest edge.
+Crownline Vale is an original side-scrolling rider prototype built for desktop Linux. You ride across a minimal parallax landscape while the day shifts into night.
 
 ## Run
 
@@ -25,10 +25,9 @@ Then open `http://localhost:8080/src/`.
 
 - `A` / `D` or arrow keys: ride left and right
 - `Shift`: gallop while stamina lasts
-- `Space`, `E`, or `Enter`: spend coins on the closest prompt
 - `P` or `Escape`: pause
 
-Pointer input also works: press the left or right side of the screen to move, and press the center area to spend coins.
+Pointer input also works: press the left or right side of the screen to move.
 
 ## Package For Ubuntu App Center
 
@@ -43,7 +42,7 @@ The generated `.snap` appears in `dist/`. For a store-ready release, change `bui
 
 ## Test
 
-The core simulation is separated from rendering, so the rules can be tested without Electron or a browser:
+The player movement and time loop are separated from rendering, so they can be tested without Electron or a browser:
 
 ```bash
 npm test
@@ -52,7 +51,7 @@ npm test
 ## Project Layout
 
 - `src/game-core.js`: deterministic game rules, economy, waves, saves
-- `src/game.js`: canvas rendering, input, audio, HUD
+- `src/game.js`: canvas rendering, input, HUD
 - `src/index.html`: app surface
 - `main.js`: Electron desktop wrapper
 - `tests/`: Node test suite for the core loop

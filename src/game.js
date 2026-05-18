@@ -5,37 +5,19 @@
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
   const dayEl = document.getElementById("day");
-  const peopleEl = document.getElementById("people");
-  const coinsEl = document.getElementById("coins");
-  const crownEl = document.getElementById("crown-health");
-  const actionEl = document.getElementById("action");
-  const actionTitleEl = document.getElementById("action-title");
-  const actionCostEl = document.getElementById("action-cost");
   const pauseButton = document.getElementById("pause");
-  const soundButton = document.getElementById("sound");
   const menuEl = document.getElementById("menu");
-  const endingEl = document.getElementById("ending");
-  const scoreLineEl = document.getElementById("score-line");
   const resumeButton = document.getElementById("resume");
   const restartButton = document.getElementById("restart");
-  const tryAgainButton = document.getElementById("try-again");
 
-  const STORAGE_KEY = "crownline-vale-save-v1";
+  const STORAGE_KEY = "crownline-vale-save-v2";
   const KING_SPRITE_SIZE = 48;
   const KING_SPRITE_SCALE = 4;
   const KING_SPRITE_ROOT = "../assets/sprites/king";
   const CLOUD_ROOT = "../assets/sprites/backgrounds/Decoration";
-  const RIVER_REFLECTION_SOURCE_HEIGHT = 270;
-  const RIVER_REFLECTION_SLICE_HEIGHT = 4;
-  const TERRAIN_FOCUS_MODE = true;
   const input = { left: false, right: false, sprint: false };
   const camera = { x: 0 };
   const view = { width: 1280, height: 720, dpr: 1, ground: 516 };
-  const riverReflection = {
-    canvas: document.createElement("canvas"),
-    ctx: null
-  };
-  riverReflection.ctx = riverReflection.canvas.getContext("2d");
   const weather = makeWeather();
   const kingSprites = {
     idle: loadSpriteFrames(`${KING_SPRITE_ROOT}/Idle/Knight_idle`, 5),
@@ -50,8 +32,6 @@
     loadImage(`${CLOUD_ROOT}/Cloud 5.png`),
     loadImage(`${CLOUD_ROOT}/Cloud 6.png`)
   ];
-  let audio = null;
-  let muted = localStorage.getItem("crownline-vale-muted") === "true";
   let state = loadGame();
   let lastTime = performance.now();
   let saveTimer = 0;
@@ -59,25 +39,11 @@
   function loadGame() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return prepareGameState(Core.createInitialState());
-      return prepareGameState(Core.reviveLoadedState(JSON.parse(raw)));
+      if (!raw) return Core.createInitialState();
+      return Core.reviveLoadedState(JSON.parse(raw));
     } catch (_error) {
-      return prepareGameState(Core.createInitialState());
+      return Core.createInitialState();
     }
-  }
-
-  function prepareGameState(nextState) {
-    if (!TERRAIN_FOCUS_MODE) return nextState;
-    nextState.structures = [];
-    nextState.camps = [];
-    nextState.portals = [];
-    nextState.citizens = [];
-    nextState.enemies = [];
-    nextState.drops = [];
-    nextState.shots = [];
-    nextState.events = [];
-    nextState.gameOver = false;
-    return nextState;
   }
 
   function loadSpriteFrames(prefix, count) {
@@ -107,18 +73,15 @@
   }
 
   function saveGame() {
-    if (state.gameOver) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(Core.serializableState(state)));
   }
 
   function restartGame() {
-    state = prepareGameState(Core.createInitialState(Date.now() >>> 0));
+    state = Core.createInitialState(Date.now() >>> 0);
     camera.x = state.player.x;
-    endingEl.hidden = true;
     menuEl.hidden = true;
     state.paused = false;
     localStorage.removeItem(STORAGE_KEY);
-    if (!TERRAIN_FOCUS_MODE) playSound("build");
   }
 
   function resize() {
@@ -154,69 +117,10 @@
     return { clouds, dust };
   }
 
-  function ensureAudio() {
-    if (audio || muted) return;
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    audio = new AudioContext();
-  }
-
-  function playTone(freq, duration, type, gain) {
-    if (!audio || muted) return;
-    const now = audio.currentTime;
-    const osc = audio.createOscillator();
-    const amp = audio.createGain();
-    osc.type = type || "sine";
-    osc.frequency.setValueAtTime(freq, now);
-    amp.gain.setValueAtTime(0.0001, now);
-    amp.gain.exponentialRampToValueAtTime(gain || 0.04, now + 0.015);
-    amp.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    osc.connect(amp);
-    amp.connect(audio.destination);
-    osc.start(now);
-    osc.stop(now + duration + 0.02);
-  }
-
-  function playSound(kind) {
-    if (muted) return;
-    ensureAudio();
-    if (kind === "coin") playTone(880, 0.12, "triangle", 0.035);
-    if (kind === "build") playTone(220, 0.16, "square", 0.025);
-    if (kind === "hire") playTone(550, 0.13, "triangle", 0.03);
-    if (kind === "wave") playTone(90, 0.28, "sawtooth", 0.028);
-    if (kind === "hurt") playTone(120, 0.22, "square", 0.035);
-    if (kind === "empty") playTone(160, 0.08, "sine", 0.018);
-  }
-
   function setPaused(paused) {
     state.paused = paused;
     menuEl.hidden = !paused;
     pauseButton.classList.toggle("play", paused);
-  }
-
-  function setMuted(value) {
-    muted = value;
-    soundButton.classList.toggle("muted", muted);
-    localStorage.setItem("crownline-vale-muted", String(muted));
-    if (muted && audio) {
-      audio.suspend();
-    } else if (audio) {
-      audio.resume();
-    }
-  }
-
-  function handleAction() {
-    if (TERRAIN_FOCUS_MODE) return;
-    ensureAudio();
-    const beforeEvents = state.events.length;
-    const didAct = Core.performAction(state);
-    if (!didAct) {
-      playSound("empty");
-      return;
-    }
-    const latest = state.events.slice(beforeEvents).at(-1);
-    playSound(latest && latest.type === "hire" ? "hire" : "build");
-    saveGame();
   }
 
   function setKey(event, pressed) {
@@ -228,12 +132,11 @@
 
   window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
-    if (["arrowleft", "arrowright", "a", "d", "shift", " ", "e", "enter", "p", "escape"].includes(key)) {
+    if (["arrowleft", "arrowright", "a", "d", "shift", "p", "escape"].includes(key)) {
       event.preventDefault();
     }
     setKey(event, true);
     if (event.repeat) return;
-    if (key === " " || key === "e" || key === "enter") handleAction();
     if (key === "p" || key === "escape") setPaused(!state.paused);
   });
 
@@ -248,7 +151,6 @@
   });
 
   canvas.addEventListener("pointerdown", (event) => {
-    ensureAudio();
     const x = event.clientX / Math.max(1, window.innerWidth);
     if (x < 0.42) {
       input.left = true;
@@ -256,8 +158,6 @@
     } else if (x > 0.58) {
       input.right = true;
       input.left = false;
-    } else {
-      handleAction();
     }
   });
 
@@ -267,15 +167,9 @@
   });
 
   pauseButton.addEventListener("click", () => setPaused(!state.paused));
-  soundButton.addEventListener("click", () => setMuted(!muted));
   resumeButton.addEventListener("click", () => setPaused(false));
   restartButton.addEventListener("click", restartGame);
-  tryAgainButton.addEventListener("click", restartGame);
   window.addEventListener("resize", resize);
-
-  function mix(a, b, t) {
-    return a + (b - a) * t;
-  }
 
   function hexToRgb(hex) {
     const clean = hex.replace("#", "");
@@ -284,6 +178,10 @@
       g: parseInt(clean.slice(2, 4), 16),
       b: parseInt(clean.slice(4, 6), 16)
     };
+  }
+
+  function mix(a, b, t) {
+    return a + (b - a) * t;
   }
 
   function colorMix(a, b, t) {
@@ -305,15 +203,11 @@
     return view.width / 2 + (worldX - camera.x * factor);
   }
 
-  function getWaterY() {
-    return Math.min(view.height - 68, view.ground + Math.max(44, view.height * 0.065));
-  }
-
   function drawSky(light) {
     const top = colorMix("#101521", "#86b9c6", light);
     const mid = colorMix("#1a1b2f", "#d8b16a", light * 0.55);
-    const low = colorMix("#252438", "#efd092", light);
-    const gradient = ctx.createLinearGradient(0, 0, 0, view.ground);
+    const low = colorMix("#252438", "#8da49c", light);
+    const gradient = ctx.createLinearGradient(0, 0, 0, view.height);
     gradient.addColorStop(0, top);
     gradient.addColorStop(0.52, mid);
     gradient.addColorStop(1, low);
@@ -404,201 +298,8 @@
   }
 
   function drawGround(light) {
-    const waterY = getWaterY();
-    const dirt = colorMix("#211811", "#56412c", light);
-    const deepDirt = colorMix("#17110d", "#37281d", light);
-    const grass = colorMix("#243d22", "#6f8e3e", light);
-    const grassDark = colorMix("#172816", "#3f5a2c", light);
-
-    ctx.fillStyle = deepDirt;
-    ctx.fillRect(0, view.ground + 22, view.width, Math.max(0, waterY - view.ground + 28));
-
-    ctx.fillStyle = dirt;
-    ctx.beginPath();
-    ctx.moveTo(0, view.ground + 8);
-    for (let x = 0; x <= view.width + 24; x += 24) {
-      ctx.lineTo(x, view.ground + 8 + Math.sin((x + camera.x * 0.65) * 0.018) * 3);
-    }
-    ctx.lineTo(view.width, waterY + 18);
-    ctx.lineTo(0, waterY + 18);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = grassDark;
-    ctx.fillRect(0, view.ground - 3, view.width, 18);
-
-    ctx.fillStyle = grass;
-    ctx.beginPath();
-    ctx.moveTo(0, view.ground - 10);
-    for (let x = 0; x <= view.width + 20; x += 20) {
-      ctx.lineTo(x, view.ground - 10 + Math.sin((x + camera.x) * 0.024) * 3);
-    }
-    ctx.lineTo(view.width, view.ground + 10);
-    ctx.lineTo(0, view.ground + 10);
-    ctx.closePath();
-    ctx.fill();
-
-    drawRiverBase(light, waterY);
-  }
-
-  function drawRiverBase(light, waterY) {
-    if (waterY >= view.height - 12) return;
-
-    const waterGradient = ctx.createLinearGradient(0, waterY - 12, 0, view.height);
-    waterGradient.addColorStop(0, colorMix("#23302c", "#607b70", light));
-    waterGradient.addColorStop(0.42, colorMix("#263b3a", "#6f918a", light));
-    waterGradient.addColorStop(1, colorMix("#17242a", "#74aabd", light));
-
-    ctx.fillStyle = waterGradient;
-    ctx.fillRect(0, waterY - 3, view.width, view.height - waterY + 4);
-
-    ctx.save();
-    ctx.globalAlpha = 0.32 + light * 0.18;
-    ctx.fillStyle = colorMix("#4a3424", "#977345", light);
-    for (let x = -80; x < view.width + 90; x += 34) {
-      const world = x + camera.x;
-      const y = waterY - 10;
-      const width = 18 + Math.abs(Math.sin(world * 0.071)) * 26;
-      ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), 5);
-    }
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = 0.42 + light * 0.26;
-    ctx.fillStyle = colorMix("#7d8f48", "#c1cc66", light);
-    for (let x = -60; x < view.width + 70; x += 46) {
-      const world = x + camera.x * 0.9;
-      const h = 8 + Math.abs(Math.sin(world * 0.083)) * 16;
-      const y = waterY - 10 + Math.sin(world * 0.044) * 2;
-      ctx.fillRect(Math.round(x), Math.round(y - h), 3, Math.round(h));
-      if (Math.sin(world * 0.039) > 0.15) {
-        ctx.fillRect(Math.round(x + 5), Math.round(y - h * 0.7), 2, Math.round(h * 0.7));
-      }
-    }
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = 0.34;
-    ctx.fillStyle = "#100d0b";
-    for (let x = -40; x < view.width + 40; x += 22) {
-      const y = waterY - 2;
-      ctx.fillRect(Math.round(x), Math.round(y), 11 + (x % 3) * 3, 2);
-    }
-    ctx.restore();
-  }
-
-  function drawRiverEffects(light) {
-    const waterY = getWaterY();
-    if (waterY >= view.height - 12) return;
-
-    drawRiverReflection(light, waterY);
-    drawRiverSurface(light, waterY);
-  }
-
-  function drawRiverReflection(light, waterY) {
-    const sourceBottom = Math.max(1, Math.round(view.ground - 8));
-    const sourceHeight = Math.min(RIVER_REFLECTION_SOURCE_HEIGHT, Math.max(96, sourceBottom - 24));
-    const sourceY = Math.max(0, Math.round(sourceBottom - sourceHeight));
-    const capturedHeight = Math.min(sourceHeight, sourceBottom - sourceY);
-    const waterDepth = view.height - waterY;
-    if (capturedHeight <= 0 || waterDepth <= 0) return;
-
-    if (riverReflection.canvas.width !== view.width || riverReflection.canvas.height !== capturedHeight) {
-      riverReflection.canvas.width = view.width;
-      riverReflection.canvas.height = capturedHeight;
-    }
-
-    const buffer = riverReflection.ctx;
-    buffer.setTransform(1, 0, 0, 1, 0, 0);
-    buffer.clearRect(0, 0, view.width, capturedHeight);
-    buffer.imageSmoothingEnabled = false;
-    buffer.drawImage(
-      canvas,
-      0,
-      Math.round(sourceY * view.dpr),
-      Math.round(view.width * view.dpr),
-      Math.round(capturedHeight * view.dpr),
-      0,
-      0,
-      view.width,
-      capturedHeight
-    );
-
-    const reflectedHeight = Math.min(capturedHeight * 0.56, waterDepth + 64);
-    const squash = reflectedHeight / capturedHeight;
-    const shimmer = state.time * 0.72;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, waterY, view.width, view.height - waterY);
-    ctx.clip();
-    ctx.imageSmoothingEnabled = false;
-
-    for (let sy = 0; sy < capturedHeight; sy += RIVER_REFLECTION_SLICE_HEIGHT) {
-      const sliceHeight = Math.min(RIVER_REFLECTION_SLICE_HEIGHT, capturedHeight - sy);
-      const depth = (capturedHeight - sy) / capturedHeight;
-      const dy = waterY + 12 + (capturedHeight - sy - sliceHeight) * squash;
-      const wave = Math.sin(shimmer + sy * 0.095) * (0.6 + depth * 1.8);
-      const drift = Math.sin(camera.x * 0.006 + sy * 0.041) * (0.4 + depth * 1.4);
-      const dx = Math.round(wave + drift);
-      const alpha = (0.04 + depth * 0.12) * (0.55 + light * 0.45);
-
-      ctx.globalAlpha = alpha;
-      ctx.drawImage(
-        riverReflection.canvas,
-        0,
-        sy,
-        view.width,
-        sliceHeight,
-        dx,
-        Math.round(dy),
-        view.width,
-        Math.max(2, Math.ceil(sliceHeight * squash) + 1)
-      );
-    }
-
-    ctx.globalAlpha = 0.2 + light * 0.12;
-    ctx.fillStyle = colorMix("#263a39", "#79a29a", light);
-    ctx.fillRect(0, waterY, view.width, view.height - waterY);
-    ctx.restore();
-  }
-
-  function drawRiverSurface(light, waterY) {
-    const waterDepth = view.height - waterY;
-    if (waterDepth <= 0) return;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, waterY - 2, view.width, waterDepth + 2);
-    ctx.clip();
-    ctx.imageSmoothingEnabled = false;
-
-    ctx.globalAlpha = 0.14 + light * 0.1;
-    ctx.fillStyle = colorMix("#a7c5b5", "#d9f1d6", light);
-    for (let i = 0; i < 38; i += 1) {
-      const x = (i * 91 + state.time * 4 - camera.x * 0.24) % (view.width + 120) - 60;
-      const y = waterY + 22 + (i % 7) * Math.max(9, waterDepth / 9);
-      const width = 10 + (i % 5) * 9;
-      ctx.fillRect(Math.round(x), Math.round(y), width, 2);
-      if (i % 4 === 0) ctx.fillRect(Math.round(x + width + 5), Math.round(y + 1), 8, 1);
-    }
-
-    ctx.globalAlpha = 0.14 + light * 0.14;
-    ctx.fillStyle = colorMix("#ddc078", "#fff0a3", light);
-    for (let i = 0; i < 16; i += 1) {
-      const x = (i * 139 + state.time * 6 - camera.x * 0.18) % (view.width + 90) - 45;
-      const y = waterY + 34 + (i % 5) * Math.max(12, waterDepth / 7);
-      ctx.fillRect(Math.round(x), Math.round(y), 4 + (i % 3) * 4, 2);
-    }
-
-    ctx.globalAlpha = 0.2 + light * 0.12;
-    ctx.fillStyle = colorMix("#182322", "#425d52", light);
-    for (let x = -30; x < view.width + 40; x += 26) {
-      const y = waterY + 2;
-      ctx.fillRect(Math.round(x), Math.round(y), 16, 2);
-    }
-
-    ctx.restore();
+    ctx.fillStyle = colorMix("#5c3a1f", "#9b6b35", light);
+    ctx.fillRect(0, Math.round(view.ground), view.width, 5);
   }
 
   function drawDust(light) {
@@ -615,208 +316,6 @@
     ctx.restore();
   }
 
-  function drawCamp(camp, light) {
-    const x = screenX(camp.x);
-    if (x < -160 || x > view.width + 160) return;
-    const y = view.ground;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = colorMix("#5b3526", "#8d5a33", light);
-    ctx.fillRect(-38, -26, 76, 20);
-    ctx.fillStyle = colorMix("#2e2020", "#69443b", light);
-    ctx.beginPath();
-    ctx.moveTo(-54, -24);
-    ctx.lineTo(-14, -76);
-    ctx.lineTo(22, -24);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = colorMix("#3c2833", "#845049", light);
-    ctx.beginPath();
-    ctx.moveTo(2, -24);
-    ctx.lineTo(42, -70);
-    ctx.lineTo(58, -24);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#f0c766";
-    ctx.globalAlpha = 0.6 + Math.sin(state.time * 8) * 0.18;
-    ctx.beginPath();
-    ctx.arc(-4, -10, 8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function drawPortal(portal) {
-    const x = screenX(portal.x);
-    if (x < -180 || x > view.width + 180) return;
-    const y = view.ground - 42;
-    const pulse = Math.sin((portal.pulse || 0) * 3.2) * 0.5 + 0.5;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.globalAlpha = 0.72;
-    const gradient = ctx.createRadialGradient(0, 0, 8, 0, 0, 76 + pulse * 12);
-    gradient.addColorStop(0, "#7d6cff");
-    gradient.addColorStop(0.45, "#27143f");
-    gradient.addColorStop(1, "rgba(8, 8, 16, 0)");
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 72 + pulse * 7, 96 + pulse * 12, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(210, 199, 255, 0.42)";
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 46 + pulse * 8, 72 + pulse * 10, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function drawStructure(structure, light) {
-    if (structure.kind === "keep") return drawKeep(structure, light);
-    if (structure.level <= 0) return drawBuildSite(structure, light);
-    if (structure.kind === "wall") return drawWall(structure, light);
-    if (structure.kind === "tower") return drawTower(structure, light);
-    if (structure.kind === "farm") return drawFarm(structure, light);
-  }
-
-  function drawBuildSite(structure, light) {
-    const x = screenX(structure.x);
-    if (x < -140 || x > view.width + 140) return;
-    const y = view.ground;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.globalAlpha = 0.54 + light * 0.14;
-    ctx.fillStyle = "#8b6b43";
-    ctx.fillRect(-34, -13, 68, 11);
-    ctx.strokeStyle = "#c19b5b";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-28, -14);
-    ctx.lineTo(-12, -50);
-    ctx.moveTo(28, -14);
-    ctx.lineTo(10, -50);
-    ctx.moveTo(-18, -34);
-    ctx.lineTo(18, -34);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function drawKeep(structure, light) {
-    const x = screenX(structure.x);
-    const y = view.ground;
-    ctx.save();
-    ctx.translate(x, y);
-    const stone = colorMix("#39363c", "#9a8b73", light);
-    const roof = colorMix("#5a1f2a", "#9f513b", light);
-    ctx.fillStyle = stone;
-    const width = 118 + structure.level * 22;
-    const height = 88 + structure.level * 30;
-    ctx.fillRect(-width / 2, -height, width, height);
-    ctx.fillStyle = roof;
-    ctx.beginPath();
-    ctx.moveTo(-width / 2 - 12, -height);
-    ctx.lineTo(0, -height - 58);
-    ctx.lineTo(width / 2 + 12, -height);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#151318";
-    ctx.fillRect(-16, -42, 32, 42);
-    ctx.fillStyle = "#f0c766";
-    ctx.fillRect(-7, -height - 84, 14, 26);
-    ctx.beginPath();
-    ctx.moveTo(7, -height - 84);
-    ctx.lineTo(42, -height - 72);
-    ctx.lineTo(7, -height - 58);
-    ctx.closePath();
-    ctx.fill();
-    drawHealthBar(structure, -width / 2, -height - 14, width, 5);
-    ctx.restore();
-  }
-
-  function drawWall(structure, light) {
-    const x = screenX(structure.x);
-    if (x < -140 || x > view.width + 140) return;
-    const y = view.ground;
-    const width = 70 + structure.level * 18;
-    const height = 58 + structure.level * 18;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = colorMix("#383b42", "#8c887a", light);
-    ctx.fillRect(-width / 2, -height, width, height);
-    ctx.fillStyle = colorMix("#25282f", "#68665c", light);
-    for (let row = 0; row < structure.level + 2; row += 1) {
-      for (let col = 0; col < 5; col += 1) {
-        const bx = -width / 2 + 6 + col * (width / 5) + (row % 2) * 7;
-        const by = -height + 8 + row * 17;
-        ctx.fillRect(bx, by, width / 6, 5);
-      }
-    }
-    if (structure.flash > 0) {
-      ctx.globalAlpha = structure.flash;
-      ctx.fillStyle = "#f0c766";
-      ctx.fillRect(-width / 2, -height, width, height);
-    }
-    drawHealthBar(structure, -width / 2, -height - 10, width, 5);
-    ctx.restore();
-  }
-
-  function drawTower(structure, light) {
-    const x = screenX(structure.x);
-    if (x < -160 || x > view.width + 160) return;
-    const y = view.ground;
-    const height = 105 + structure.level * 36;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = colorMix("#3f2d23", "#86603a", light);
-    ctx.fillRect(-24, -height, 48, height);
-    ctx.fillStyle = colorMix("#2b1f1a", "#5c432c", light);
-    ctx.fillRect(-42, -height - 18, 84, 25);
-    ctx.fillStyle = "#f0c766";
-    ctx.fillRect(-6, -height - 45, 12, 27);
-    drawTinyGuard(0, -height - 28, light);
-    drawHealthBar(structure, -38, -height - 54, 76, 5);
-    ctx.restore();
-  }
-
-  function drawFarm(structure, light) {
-    const x = screenX(structure.x);
-    if (x < -190 || x > view.width + 190) return;
-    const y = view.ground;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = colorMix("#3f2a18", "#7f6133", light);
-    ctx.fillRect(-92, -8, 184, 26);
-    ctx.strokeStyle = colorMix("#8b693f", "#e0b56a", light);
-    ctx.lineWidth = 3;
-    for (let i = -80; i <= 80; i += 22) {
-      ctx.beginPath();
-      ctx.moveTo(i, 16);
-      ctx.lineTo(i + 24, -8);
-      ctx.stroke();
-    }
-    ctx.fillStyle = colorMix("#31502e", "#7c9a48", light);
-    for (let i = 0; i < structure.level * 8; i += 1) {
-      const px = -78 + i * 21;
-      ctx.fillRect(px, -22 - (i % 2) * 8, 6, 16 + (i % 2) * 6);
-    }
-    ctx.fillStyle = colorMix("#53331e", "#9d6736", light);
-    ctx.fillRect(-86, -48, 46, 40);
-    ctx.beginPath();
-    ctx.moveTo(-94, -48);
-    ctx.lineTo(-62, -78);
-    ctx.lineTo(-30, -48);
-    ctx.closePath();
-    ctx.fill();
-    drawHealthBar(structure, -88, -84, 176, 5);
-    ctx.restore();
-  }
-
-  function drawHealthBar(target, x, y, width, height) {
-    if (!target.maxHp || target.hp >= target.maxHp) return;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-    ctx.fillRect(x, y, width, height);
-    ctx.fillStyle = "#b84f52";
-    ctx.fillRect(x, y, width * Math.max(0, target.hp / target.maxHp), height);
-  }
-
   function pixelRect(unit, x, y, width, height, color) {
     ctx.fillStyle = color;
     ctx.fillRect(Math.round(x * unit), Math.round(y * unit), Math.round(width * unit), Math.round(height * unit));
@@ -830,204 +329,6 @@
     ctx.moveTo(Math.round(x1 * unit), Math.round(y1 * unit));
     ctx.lineTo(Math.round(x2 * unit), Math.round(y2 * unit));
     ctx.stroke();
-  }
-
-  function personPalette(role, light) {
-    const skin = colorMix("#a66b48", "#e7b17c", light);
-    const darkSkin = colorMix("#75442e", "#a86a45", light);
-    const palettes = {
-      vagrant: {
-        main: colorMix("#342b35", "#6f5144", light),
-        dark: colorMix("#1d1a23", "#3c2f30", light),
-        trim: colorMix("#6d5544", "#a67a55", light),
-        pants: colorMix("#29272a", "#4a3a35", light),
-        hat: colorMix("#25202a", "#4e3a3b", light),
-        skin,
-        darkSkin
-      },
-      builder: {
-        main: colorMix("#72431f", "#bd7c34", light),
-        dark: colorMix("#3a2619", "#6b3d21", light),
-        trim: colorMix("#a57942", "#d8a858", light),
-        pants: colorMix("#313437", "#596064", light),
-        hat: colorMix("#8c622d", "#d0a052", light),
-        skin,
-        darkSkin
-      },
-      guard: {
-        main: colorMix("#263849", "#4b6f7b", light),
-        dark: colorMix("#151e29", "#263844", light),
-        trim: colorMix("#a8954d", "#e0c76b", light),
-        pants: colorMix("#1f252d", "#374350", light),
-        hat: colorMix("#1f2c39", "#3e5866", light),
-        skin,
-        darkSkin
-      },
-      farmer: {
-        main: colorMix("#3b5a32", "#6f8c43", light),
-        dark: colorMix("#22311f", "#3e532c", light),
-        trim: colorMix("#987843", "#d3aa5b", light),
-        pants: colorMix("#493322", "#765236", light),
-        hat: colorMix("#a88545", "#e0bd67", light),
-        skin,
-        darkSkin
-      }
-    };
-    return palettes[role] || palettes.farmer;
-  }
-
-  function drawPixelTool(role, unit, palette) {
-    if (role === "builder") {
-      pixelLine(unit, 6, -13, 10, -5, palette.dark, 0.7);
-      pixelRect(unit, 5, -15, 5, 2, "#c9b37d");
-      pixelRect(unit, 7, -16, 2, 1, "#eee0ad");
-    }
-
-    if (role === "guard") {
-      pixelRect(unit, 7, -17, 1, 13, palette.trim);
-      pixelRect(unit, 8, -18, 1, 3, palette.dark);
-      pixelRect(unit, 9, -15, 1, 3, palette.dark);
-      pixelRect(unit, 9, -10, 1, 3, palette.dark);
-      pixelRect(unit, 8, -7, 1, 3, palette.dark);
-      pixelRect(unit, 1, -12, 7, 1, "#d9c68a");
-      pixelRect(unit, 6, -13, 2, 3, "#efe4b2");
-    }
-
-    if (role === "farmer") {
-      pixelLine(unit, 6, -14, 10, -2, palette.dark, 0.7);
-      pixelRect(unit, 7, -15, 6, 1, "#cbb879");
-      pixelRect(unit, 12, -14, 1, 3, "#cbb879");
-    }
-
-    if (role === "vagrant") {
-      pixelLine(unit, 6, -17, 6, 0, "#33241a", 0.75);
-      pixelRect(unit, -9, -9, 3, 4, palette.trim);
-      pixelRect(unit, -10, -8, 5, 2, palette.dark);
-    }
-  }
-
-  function drawPixelPerson(role, light, seed, options) {
-    const unit = options.unit || 3;
-    const facing = options.facing || 1;
-    const palette = personPalette(role, light);
-    const walk = Math.sin(state.time * 8 + seed);
-    const legA = Math.round(walk);
-    const legB = Math.round(-walk);
-
-    ctx.save();
-    ctx.scale(facing, 1);
-
-    pixelRect(unit, -6, -1, 12, 1, "rgba(0, 0, 0, 0.24)");
-
-    if (role === "guard") {
-      pixelRect(unit, -7, -20, 3, 11, palette.dark);
-      pixelRect(unit, -8, -19, 1, 9, palette.trim);
-    }
-
-    pixelRect(unit, -5 + legA, -7, 4, 7, palette.pants);
-    pixelRect(unit, 1 + legB, -7, 4, 7, palette.pants);
-    pixelRect(unit, -6 + legA, -1, 5, 2, palette.dark);
-    pixelRect(unit, 1 + legB, -1, 5, 2, palette.dark);
-
-    if (role === "vagrant") {
-      pixelRect(unit, -6, -17, 12, 11, palette.main);
-      pixelRect(unit, -7, -14, 2, 8, palette.dark);
-      pixelRect(unit, 5, -13, 2, 7, palette.dark);
-      pixelRect(unit, -4, -8, 3, 2, palette.trim);
-      pixelRect(unit, 3, -6, 2, 2, palette.trim);
-      pixelRect(unit, -5, -22, 10, 7, palette.hat);
-      pixelRect(unit, -3, -19, 6, 5, palette.skin);
-      pixelRect(unit, -1, -16, 3, 2, palette.darkSkin);
-    } else {
-      pixelRect(unit, -5, -16, 10, 9, palette.main);
-      pixelRect(unit, -5, -9, 10, 2, palette.dark);
-      pixelRect(unit, -7, -15, 3, 8, palette.dark);
-      pixelRect(unit, 5, -15, 3, 8, palette.dark);
-      pixelRect(unit, -4, -22, 8, 7, palette.skin);
-      pixelRect(unit, -5, -21, 10, 3, palette.darkSkin);
-      pixelRect(unit, -4, -15, 8, 2, palette.darkSkin);
-      pixelRect(unit, 2, -19, 1, 1, "#101015");
-    }
-
-    if (role === "builder") {
-      pixelRect(unit, -6, -24, 12, 3, palette.hat);
-      pixelRect(unit, -3, -26, 7, 2, palette.hat);
-      pixelRect(unit, -4, -15, 8, 6, colorMix("#876135", "#c99a58", light));
-      pixelRect(unit, -2, -14, 1, 4, "#e4c381");
-    }
-
-    if (role === "guard") {
-      pixelRect(unit, -5, -24, 10, 5, palette.hat);
-      pixelRect(unit, -6, -21, 12, 3, palette.hat);
-      pixelRect(unit, -5, -16, 10, 2, palette.trim);
-      pixelRect(unit, -2, -13, 4, 4, colorMix("#5a6470", "#9fb1b6", light));
-    }
-
-    if (role === "farmer") {
-      pixelRect(unit, -7, -25, 14, 2, palette.hat);
-      pixelRect(unit, -5, -27, 10, 3, palette.hat);
-      pixelRect(unit, -6, -15, 12, 2, palette.trim);
-    }
-
-    drawPixelTool(role, unit, palette);
-    ctx.restore();
-  }
-
-  function drawCitizen(citizen, light) {
-    const x = screenX(citizen.x);
-    if (x < -80 || x > view.width + 80) return;
-    const y = view.ground;
-    const seed = Number(citizen.id.slice(1)) || 1;
-    const bob = Math.sin(state.time * 7.5 + seed) * 1.5;
-
-    ctx.save();
-    ctx.translate(Math.round(x), Math.round(y + bob));
-    drawPixelPerson(citizen.role, light, seed, { facing: citizen.side || 1, unit: 3 });
-    ctx.restore();
-  }
-
-  function drawTinyGuard(x, y, light) {
-    ctx.save();
-    ctx.translate(x, y + 8);
-    drawPixelPerson("guard", light, 7, { facing: 1, unit: 2 });
-    ctx.restore();
-  }
-
-  function drawEnemy(enemy) {
-    const x = screenX(enemy.x);
-    if (x < -90 || x > view.width + 90) return;
-    const y = view.ground;
-    const hurt = enemy.stunned > 0 ? 1 : 0;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(enemy.side, 1);
-    ctx.fillStyle = hurt ? "#6f5cff" : "#11131a";
-    ctx.globalAlpha = hurt ? 0.92 : 0.86;
-    ctx.beginPath();
-    ctx.ellipse(0, -28, 24, 30, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-8, -54);
-    ctx.lineTo(0, -76);
-    ctx.lineTo(8, -54);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = enemy.loot > 0 ? "#f0c766" : "#c9d0ff";
-    ctx.globalAlpha = 1;
-    ctx.fillRect(8, -38, 5, 5);
-    ctx.fillRect(-13, -38, 5, 5);
-    ctx.strokeStyle = "#06070a";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(-12, -4);
-    ctx.lineTo(-18, 0);
-    ctx.moveTo(12, -4);
-    ctx.lineTo(18, 0);
-    ctx.stroke();
-    if (enemy.hp < enemy.maxHp) {
-      drawHealthBar(enemy, -24, -88, 48, 5);
-    }
-    ctx.restore();
   }
 
   function drawPlayer(light) {
@@ -1093,8 +394,8 @@
     const horse = colorMix("#2f211b", "#81583a", light);
     const horseDark = colorMix("#17100d", "#3d291d", light);
     const leather = colorMix("#2d1b13", "#704225", light);
-    const gold = p.hurtTimer > 0 ? "#fff0a8" : "#f0c766";
-    const robe = p.hurtTimer > 0 ? "#eec2b2" : colorMix("#641f36", "#b53f54", light);
+    const gold = "#f0c766";
+    const robe = colorMix("#641f36", "#b53f54", light);
     const robeDark = colorMix("#2f1424", "#742a3b", light);
     const skin = colorMix("#b6784f", "#f1bf8d", light);
     const beard = colorMix("#31241c", "#6a4a34", light);
@@ -1166,40 +467,6 @@
     ctx.restore();
   }
 
-  function drawDrop(drop) {
-    const x = screenX(drop.x);
-    const y = view.ground + drop.y - 9;
-    if (x < -30 || x > view.width + 30) return;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = "#b8792d";
-    ctx.beginPath();
-    ctx.arc(0, 0, 9, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#ffe697";
-    ctx.beginPath();
-    ctx.arc(-2, -2, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function drawShot(shot) {
-    const t = 1 - shot.ttl / shot.maxTtl;
-    const x = screenX(mix(shot.fromX, shot.toX, t));
-    const y = view.ground - 90 - Math.sin(t * Math.PI) * 28;
-    const dx = shot.toX - shot.fromX;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(dx > 0 ? 0 : Math.PI);
-    ctx.strokeStyle = "#f0e1b8";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(-16, 0);
-    ctx.lineTo(16, 0);
-    ctx.stroke();
-    ctx.restore();
-  }
-
   function render() {
     const light = daylight();
     camera.x += (state.player.x - camera.x) * 0.085;
@@ -1210,33 +477,7 @@
     drawMountains(light);
     drawGround(light);
     drawDust(light);
-
-    if (TERRAIN_FOCUS_MODE) {
-      drawPlayer(light);
-    } else {
-      for (const portal of state.portals) drawPortal(portal);
-      for (const camp of state.camps) drawCamp(camp, light);
-      for (const structure of state.structures) drawStructure(structure, light);
-      for (const drop of state.drops) drawDrop(drop);
-
-      const actors = []
-        .concat(state.citizens.map((item) => ({ kind: "citizen", item })))
-        .concat(state.enemies.map((item) => ({ kind: "enemy", item })))
-        .concat([{ kind: "player", item: state.player }])
-        .sort((a, b) => a.item.x - b.item.x);
-
-      for (const actor of actors) {
-        if (actor.kind === "citizen") drawCitizen(actor.item, light);
-        if (actor.kind === "enemy") drawEnemy(actor.item);
-        if (actor.kind === "player") drawPlayer(light);
-      }
-    }
-
-    drawRiverEffects(light);
-
-    if (!TERRAIN_FOCUS_MODE) {
-      for (const shot of state.shots) drawShot(shot);
-    }
+    drawPlayer(light);
 
     if (state.phase === "night") {
       ctx.fillStyle = "rgba(18, 17, 41, 0.18)";
@@ -1245,72 +486,7 @@
   }
 
   function syncHud() {
-    const counts = Core.getCounts(state);
     dayEl.textContent = String(state.day);
-    peopleEl.textContent = String(counts.total);
-    updateCoins(Math.max(0, state.player.coins));
-    updateCrown();
-
-    if (TERRAIN_FOCUS_MODE) {
-      actionEl.hidden = true;
-      endingEl.hidden = true;
-      return;
-    }
-
-    const target = Core.getNearestInteractable(state);
-    if (!target) {
-      actionEl.hidden = true;
-    } else {
-      actionEl.hidden = false;
-      actionTitleEl.textContent = target.title;
-      actionCostEl.textContent = `${target.cost}`;
-    }
-
-    if (state.gameOver) {
-      endingEl.hidden = false;
-      scoreLineEl.textContent = `Day ${state.day}, ${state.stats.enemiesDefeated} defeated, ${state.stats.peopleHired} hired.`;
-    }
-  }
-
-  function updateCoins(count) {
-    const visible = Math.min(count, 16);
-    if (coinsEl.dataset.count === String(count)) return;
-    coinsEl.dataset.count = String(count);
-    coinsEl.innerHTML = "";
-    for (let i = 0; i < visible; i += 1) {
-      const coin = document.createElement("span");
-      coin.className = "coin";
-      coinsEl.appendChild(coin);
-    }
-    if (count > visible) {
-      const more = document.createElement("span");
-      more.className = "coin more";
-      more.textContent = `+${count - visible}`;
-      coinsEl.appendChild(more);
-    }
-  }
-
-  function updateCrown() {
-    const current = Math.max(0, state.player.crownHealth);
-    const max = state.player.maxCrownHealth;
-    const signature = `${current}/${max}`;
-    if (crownEl.dataset.value === signature) return;
-    crownEl.dataset.value = signature;
-    crownEl.innerHTML = "";
-    for (let i = 0; i < max; i += 1) {
-      const pip = document.createElement("span");
-      pip.className = i < current ? "pip" : "pip empty";
-      crownEl.appendChild(pip);
-    }
-  }
-
-  function reactToEvents() {
-    if (!state.events || state.events.length === 0) return;
-    for (const event of state.events) {
-      if (event.type === "coin") playSound("coin");
-      if (event.type === "wave") playSound("wave");
-      if (event.type === "hurt" || event.type === "steal" || event.type === "break") playSound("hurt");
-    }
   }
 
   function frame(now) {
@@ -1318,8 +494,6 @@
     lastTime = now;
 
     Core.update(state, input, dt);
-    prepareGameState(state);
-    reactToEvents();
     render();
     syncHud();
 
@@ -1332,7 +506,6 @@
     requestAnimationFrame(frame);
   }
 
-  setMuted(muted);
   resize();
   camera.x = state.player.x;
   syncHud();

@@ -1,7 +1,7 @@
 {
   "name": "crownline-vale",
   "version": "0.1.0",
-  "description": "A coin-driven side-scrolling crown defense game for desktop Linux.",
+  "description": "A minimal side-scrolling rider game for desktop Linux.",
   "main": "main.js",
   "author": "Bulat",
   "license": "MIT",
@@ -45,7 +45,6 @@
       "confinement": "strict",
       "plugs": [
         "default",
-        "audio-playback",
         "opengl",
         "wayland",
         "x11"

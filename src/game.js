@@ -26,6 +26,7 @@
   const KING_SPRITE_ROOT = "../assets/sprites/king";
   const SCENERY_ROOT = "../assets/sprites/backgrounds";
   const LAND_ROOT = "../assets/terrain/grassland";
+  const TREE_ROOT = "../assets/terrain/trees";
   const LAND_STRIP_SCALE = 2;
   const LAND_SURFACE_SOURCE_Y = 28;
   const LAND_LARGE_TARGET_HEIGHT = 300;
@@ -101,7 +102,13 @@
     prepared: null,
     preparedKey: ""
   };
+  const treeAssets = {
+    birch: loadImage(`${TREE_ROOT}/birch.png`),
+    oak: loadImage(`${TREE_ROOT}/oak.png`),
+    willow: loadImage(`${TREE_ROOT}/willow.png`)
+  };
   const terrainDecorations = makeTerrainDecorations();
+  const forestSprites = makeForestSprites();
   let audio = null;
   let muted = localStorage.getItem("crownline-vale-muted") === "true";
   let state = loadGame();
@@ -186,6 +193,37 @@
     );
 
     return decorations;
+  }
+
+  function makeForestSprites() {
+    const pattern = [
+      { key: "oak", scale: 0.88, parallax: 0.62, alpha: 0.54, y: 34 },
+      { key: "willow", scale: 0.8, parallax: 0.66, alpha: 0.5, y: 42 },
+      { key: "birch", scale: 0.72, parallax: 0.7, alpha: 0.58, y: 36 },
+      { key: "oak", scale: 1.08, parallax: 0.84, alpha: 0.78, y: 26 },
+      { key: "birch", scale: 0.92, parallax: 0.88, alpha: 0.82, y: 24 },
+      { key: "willow", scale: 1.0, parallax: 0.86, alpha: 0.76, y: 30 }
+    ];
+    const sprites = [];
+    let index = 0;
+
+    for (let x = Core.WORLD_MIN + 170; x <= Core.WORLD_MAX - 170; x += 185) {
+      const item = pattern[index % pattern.length];
+      const wobble = Math.sin(index * 18.7) * 72;
+      const gap = Math.abs(x) < 260 ? Math.sign(x || 1) * 230 : 0;
+      sprites.push({
+        key: item.key,
+        x: x + wobble + gap,
+        scale: item.scale + Math.sin(index * 7.3) * 0.08,
+        parallax: item.parallax,
+        alpha: item.alpha,
+        y: item.y + Math.sin(index * 9.1) * 8,
+        flip: index % 3 === 0
+      });
+      index += 1;
+    }
+
+    return sprites;
   }
 
   function saveGame() {
@@ -591,8 +629,17 @@
   }
 
   function drawForest(light) {
-    drawTreeLayer(0.34, view.ground - 10, colorMix("#142922", "#314b33", light), 92, 82);
-    drawTreeLayer(0.53, view.ground + 6, colorMix("#183426", "#3d5f36", light), 74, 108);
+    ctx.save();
+    ctx.globalAlpha = 0.68;
+    drawTreeLayer(0.28, view.ground - 58, colorMix("#0e1719", "#22342c", light), 78, 138);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.58;
+    drawTreeLayer(0.42, view.ground - 34, colorMix("#12251f", "#2f4b34", light), 86, 112);
+    ctx.restore();
+
+    drawTreeSprites(light);
   }
 
   function treeNoise(value) {
@@ -608,13 +655,56 @@
       const n = Math.abs(treeNoise(Math.floor(world / spacing)));
       const x = sx + n * spacing * 0.42;
       const h = height * (0.78 + n * 0.5);
-      ctx.beginPath();
-      ctx.moveTo(x, baseY - h);
-      ctx.lineTo(x - h * 0.28, baseY);
-      ctx.lineTo(x + h * 0.28, baseY);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillRect(x - 3, baseY - h * 0.26, 6, h * 0.26);
+      const block = Math.max(5, Math.round(h / 18));
+
+      ctx.fillRect(Math.round(x - block), Math.round(baseY - h * 0.48), block * 2, Math.round(h * 0.5));
+      drawBlockyCrown(x - h * 0.18, baseY - h * 0.72, h * 0.28, h * 0.34, block, color, n * 29);
+      drawBlockyCrown(x + h * 0.18, baseY - h * 0.7, h * 0.32, h * 0.36, block, color, n * 37);
+      drawBlockyCrown(x, baseY - h * 0.88, h * 0.36, h * 0.34, block, color, n * 43);
+      drawBlockyCrown(x, baseY - h * 0.56, h * 0.42, h * 0.34, block, color, n * 53);
+    }
+  }
+
+  function drawBlockyCrown(cx, cy, rx, ry, block, color, salt) {
+    ctx.fillStyle = color;
+    for (let y = -ry; y <= ry; y += block) {
+      for (let x = -rx; x <= rx; x += block) {
+        const nx = x / rx;
+        const ny = y / ry;
+        if (nx * nx + ny * ny > 1) continue;
+        if (Math.abs(nx) + Math.abs(ny) > 1.26 && treeNoise((cx + x + salt) * 0.037) > 0.25) continue;
+        ctx.fillRect(Math.round(cx + x), Math.round(cy + y), block + 1, block + 1);
+      }
+    }
+  }
+
+  function drawTreeSprites(light) {
+    const tint = colorMix("#111a18", "#2c3f33", light);
+
+    for (const tree of forestSprites) {
+      const image = treeAssets[tree.key];
+      if (!imageReady(image)) continue;
+
+      const x = screenX(tree.x, tree.parallax);
+      const scale = tree.scale;
+      const width = image.naturalWidth * scale;
+      const height = image.naturalHeight * scale;
+      if (x < -width - 80 || x > view.width + width + 80) continue;
+
+      const y = view.ground - height + tree.y;
+
+      ctx.save();
+      ctx.globalAlpha = tree.alpha;
+      ctx.imageSmoothingEnabled = false;
+      ctx.translate(Math.round(x), Math.round(y));
+      ctx.scale(tree.flip ? -1 : 1, 1);
+      ctx.drawImage(image, Math.round(-width / 2), 0, Math.round(width), Math.round(height));
+
+      ctx.globalCompositeOperation = "source-atop";
+      ctx.globalAlpha = (1 - light) * 0.42;
+      ctx.fillStyle = tint;
+      ctx.fillRect(Math.round(-width / 2), 0, Math.round(width), Math.round(height));
+      ctx.restore();
     }
   }
 

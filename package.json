@@ -1,0 +1,55 @@
+{
+  "name": "crownline-vale",
+  "version": "0.1.0",
+  "description": "A coin-driven side-scrolling crown defense game for desktop Linux.",
+  "main": "main.js",
+  "author": "Bulat",
+  "license": "MIT",
+  "scripts": {
+    "start": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "start:web": "python3 -m http.server 8080 --directory .",
+    "test": "node --test tests/*.test.js",
+    "dist:snap": "env -u ELECTRON_RUN_AS_NODE electron-builder --linux snap"
+  },
+  "keywords": [
+    "game",
+    "side-scroller",
+    "strategy",
+    "ubuntu",
+    "snap"
+  ],
+  "devDependencies": {
+    "electron": "^42.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "io.github.crownline.vale",
+    "productName": "Crownline Vale",
+    "files": [
+      "main.js",
+      "src/**/*",
+      "assets/**/*",
+      "build/**/*"
+    ],
+    "linux": {
+      "target": [
+        "snap",
+        "AppImage"
+      ],
+      "category": "Game",
+      "icon": "build/icon.svg"
+    },
+    "snap": {
+      "base": "core24",
+      "grade": "devel",
+      "confinement": "strict",
+      "plugs": [
+        "default",
+        "audio-playback",
+        "opengl",
+        "wayland",
+        "x11"
+      ]
+    }
+  }
+}

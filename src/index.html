@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Crownline Vale</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main id="game-shell" aria-label="Crownline Vale game">
+      <canvas id="game" width="1280" height="720"></canvas>
+
+      <section id="hud" aria-live="polite">
+        <div class="hud-group">
+          <span class="hud-label">Day</span>
+          <strong id="day">1</strong>
+        </div>
+        <div class="hud-group coin-row" id="coins" aria-label="Coins"></div>
+        <div class="hud-group">
+          <span class="hud-label">Crown</span>
+          <div id="crown-health" class="pips" aria-label="Crown health"></div>
+        </div>
+        <div class="hud-group">
+          <span class="hud-label">People</span>
+          <strong id="people">0</strong>
+        </div>
+      </section>
+
+      <div id="action" hidden>
+        <span id="action-title"></span>
+        <span id="action-cost" class="cost"></span>
+      </div>
+
+      <section id="menu" class="overlay" hidden>
+        <h1>Crownline Vale</h1>
+        <div class="menu-actions">
+          <button id="resume" type="button">Resume</button>
+          <button id="restart" type="button">New Reign</button>
+        </div>
+      </section>
+
+      <section id="ending" class="overlay" hidden>
+        <h1>The Crown Falls</h1>
+        <p id="score-line"></p>
+        <button id="try-again" type="button">New Reign</button>
+      </section>
+
+      <div id="buttons">
+        <button id="sound" class="icon-button" type="button" aria-label="Toggle sound" title="Toggle sound"></button>
+        <button id="pause" class="icon-button" type="button" aria-label="Pause" title="Pause"></button>
+      </div>
+    </main>
+
+    <script src="./game-core.js"></script>
+    <script src="./game.js"></script>
+  </body>
+</html>

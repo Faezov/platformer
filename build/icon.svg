@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Crownline Vale icon">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#252438"/>
+      <stop offset="0.55" stop-color="#6d5a54"/>
+      <stop offset="1" stop-color="#d7a75e"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffe697"/>
+      <stop offset="1" stop-color="#b8792d"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#sky)"/>
+  <path d="M0 335 C70 300 129 322 199 292 C284 255 354 297 512 244 L512 512 L0 512 Z" fill="#263924"/>
+  <path d="M0 382 C97 346 167 384 248 348 C336 309 398 352 512 312 L512 512 L0 512 Z" fill="#1b271d"/>
+  <path d="M126 304 L386 304 L360 411 L152 411 Z" fill="#39363c"/>
+  <path d="M106 306 L256 144 L406 306 Z" fill="#8b3434"/>
+  <path d="M190 411 L190 326 L322 326 L322 411 Z" fill="#17171d"/>
+  <path d="M157 161 L195 238 L256 132 L317 238 L355 161 L379 279 L133 279 Z" fill="url(#gold)"/>
+  <circle cx="256" cy="114" r="28" fill="#ffe697"/>
+  <path d="M256 64 L270 104 L312 104 L278 130 L290 171 L256 146 L222 171 L234 130 L200 104 L242 104 Z" fill="#f0c766"/>
+</svg>

@@ -811,7 +811,7 @@
           const r = pixels[index];
           const g = pixels[index + 1];
           const b = pixels[index + 2];
-          if (r < 22 && g < 22 && b < 22) pixels[index + 3] = 0;
+          if (r < 42 && g < 42 && b < 42) pixels[index + 3] = 0;
         }
       }
       buffer.putImageData(imageData, 0, 0);

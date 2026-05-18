@@ -24,23 +24,9 @@
   const KING_SPRITE_SIZE = 48;
   const KING_SPRITE_SCALE = 4;
   const KING_SPRITE_ROOT = "../assets/sprites/king";
-  const SCENERY_ROOT = "../assets/sprites/backgrounds";
-  const LAND_ROOT = "../assets/terrain/grassland";
-  const TREE_ROOT = "../assets/terrain/trees";
-  const LAND_STRIP_SCALE = 2;
-  const LAND_SURFACE_SOURCE_Y = 28;
-  const LAND_LARGE_TARGET_HEIGHT = 300;
-  const LAND_LARGE_SOURCE_TOP_RATIO = 0.145;
-  const LAND_LARGE_SURFACE_RATIO = 0.3;
-  const LAND_LARGE_SOURCE_BOTTOM_RATIO = 0.92;
+  const CLOUD_ROOT = "../assets/sprites/backgrounds/Decoration";
   const RIVER_REFLECTION_SOURCE_HEIGHT = 270;
   const RIVER_REFLECTION_SLICE_HEIGHT = 4;
-  const USE_ASSET_SKY = false;
-  const USE_ASSET_MOUNTAINS = false;
-  const USE_ASSET_TERRAIN = false;
-  const USE_ASSET_PROPS = false;
-  const USE_CUSTOM_LAND_ASSET = true;
-  const USE_REFLECTIVE_RIVER = true;
   const TERRAIN_FOCUS_MODE = true;
   const input = { left: false, right: false, sprint: false };
   const camera = { x: 0 };
@@ -56,59 +42,14 @@
     walk: loadSpriteFrames(`${KING_SPRITE_ROOT}/Walk/Knight_walk`, 8),
     gallop: loadSpriteFrames(`${KING_SPRITE_ROOT}/Gallop/Knight_gallop`, 5)
   };
-  const scenery = {
-    sky: loadImage(`${SCENERY_ROOT}/Backgrounds/Sky.png`),
-    redSky: loadImage(`${SCENERY_ROOT}/Backgrounds/Red Sky.png`),
-    mountains: [
-      loadImage(`${SCENERY_ROOT}/Backgrounds/Mountains 1.png`),
-      loadImage(`${SCENERY_ROOT}/Backgrounds/Mountains 2.png`),
-      loadImage(`${SCENERY_ROOT}/Backgrounds/Mountains 3.png`),
-      loadImage(`${SCENERY_ROOT}/Backgrounds/Mountains 4.png`)
-    ],
-    tiles: loadImage(`${SCENERY_ROOT}/Tiles/Pixel Art Tiles and Backgrounds - Mountains.png`),
-    props: {
-      barrel: loadImage(`${SCENERY_ROOT}/Decoration/Barrel.png`),
-      fence1: loadImage(`${SCENERY_ROOT}/Decoration/Fence 1.png`),
-      fence2: loadImage(`${SCENERY_ROOT}/Decoration/Fence 2.png`),
-      grass1: loadImage(`${SCENERY_ROOT}/Decoration/Grass 1.png`),
-      grass2: loadImage(`${SCENERY_ROOT}/Decoration/Grass 2.png`),
-      grass3: loadImage(`${SCENERY_ROOT}/Decoration/Grass 3.png`),
-      grass4: loadImage(`${SCENERY_ROOT}/Decoration/Grass 4.png`),
-      house: loadImage(`${SCENERY_ROOT}/Decoration/House.png`),
-      laundry: loadImage(`${SCENERY_ROOT}/Decoration/Laundry.png`),
-      rock1: loadImage(`${SCENERY_ROOT}/Decoration/Rock 1.png`),
-      rock2: loadImage(`${SCENERY_ROOT}/Decoration/Rock 2.png`),
-      rock3: loadImage(`${SCENERY_ROOT}/Decoration/Rock 3.png`),
-      rock4: loadImage(`${SCENERY_ROOT}/Decoration/Rock 4.png`),
-      rock5: loadImage(`${SCENERY_ROOT}/Decoration/Rock 5.png`),
-      stackedRocks: loadImage(`${SCENERY_ROOT}/Decoration/Stacked Rocks.png`),
-      torch: loadImage(`${SCENERY_ROOT}/Decoration/Standing Torch.png`),
-      tree1: loadImage(`${SCENERY_ROOT}/Decoration/Tree 1.png`),
-      tree2: loadImage(`${SCENERY_ROOT}/Decoration/Tree 2.png`),
-      tree3: loadImage(`${SCENERY_ROOT}/Decoration/Tree 3.png`),
-      shed: loadImage(`${SCENERY_ROOT}/Decoration/Wooden Shed.png`)
-    },
-    clouds: [
-      loadImage(`${SCENERY_ROOT}/Decoration/Cloud 1.png`),
-      loadImage(`${SCENERY_ROOT}/Decoration/Cloud 2.png`),
-      loadImage(`${SCENERY_ROOT}/Decoration/Cloud 3.png`),
-      loadImage(`${SCENERY_ROOT}/Decoration/Cloud 4.png`),
-      loadImage(`${SCENERY_ROOT}/Decoration/Cloud 5.png`),
-      loadImage(`${SCENERY_ROOT}/Decoration/Cloud 6.png`)
-    ]
-  };
-  const landAssets = {
-    strip: loadImage(`${LAND_ROOT}/land-strip.png`),
-    prepared: null,
-    preparedKey: ""
-  };
-  const treeAssets = {
-    birch: loadImage(`${TREE_ROOT}/birch.png`),
-    oak: loadImage(`${TREE_ROOT}/oak.png`),
-    willow: loadImage(`${TREE_ROOT}/willow.png`)
-  };
-  const terrainDecorations = makeTerrainDecorations();
-  const forestSprites = makeForestSprites();
+  const cloudImages = [
+    loadImage(`${CLOUD_ROOT}/Cloud 1.png`),
+    loadImage(`${CLOUD_ROOT}/Cloud 2.png`),
+    loadImage(`${CLOUD_ROOT}/Cloud 3.png`),
+    loadImage(`${CLOUD_ROOT}/Cloud 4.png`),
+    loadImage(`${CLOUD_ROOT}/Cloud 5.png`),
+    loadImage(`${CLOUD_ROOT}/Cloud 6.png`)
+  ];
   let audio = null;
   let muted = localStorage.getItem("crownline-vale-muted") === "true";
   let state = loadGame();
@@ -163,67 +104,6 @@
 
   function framesReady(frames) {
     return frames.length > 0 && frames.every((frame) => frame.complete && frame.naturalWidth > 0);
-  }
-
-  function makeTerrainDecorations() {
-    const props = ["grass1", "grass2", "grass3", "rock2", "grass4", "rock3", "fence1", "grass2", "rock5", "grass1", "stackedRocks", "grass3"];
-    const decorations = [];
-    for (let x = Core.WORLD_MIN + 260; x <= Core.WORLD_MAX - 260; x += 165) {
-      const wobble = Math.sin(x * 0.021) * 58;
-      const index = Math.abs(Math.floor((x + 4000) / 165)) % props.length;
-      decorations.push({
-        key: props[index],
-        x: x + wobble,
-        scale: 1.7 + (index % 4) * 0.18,
-        layer: index % 5 === 0 ? "back" : "front"
-      });
-    }
-
-    decorations.push(
-      { key: "tree1", x: -2180, scale: 1.15, layer: "back" },
-      { key: "tree2", x: -1840, scale: 1.05, layer: "back" },
-      { key: "shed", x: -1220, scale: 1.4, layer: "back" },
-      { key: "house", x: 1220, scale: 1.25, layer: "back" },
-      { key: "tree3", x: 1850, scale: 1.25, layer: "back" },
-      { key: "tree1", x: 2260, scale: 1.05, layer: "back" },
-      { key: "barrel", x: -760, scale: 1.45, layer: "front" },
-      { key: "laundry", x: 760, scale: 1.45, layer: "front" },
-      { key: "torch", x: -245, scale: 1.25, layer: "front" },
-      { key: "torch", x: 245, scale: 1.25, layer: "front" }
-    );
-
-    return decorations;
-  }
-
-  function makeForestSprites() {
-    const pattern = [
-      { key: "oak", scale: 0.88, parallax: 0.62, alpha: 0.54, y: 34 },
-      { key: "willow", scale: 0.8, parallax: 0.66, alpha: 0.5, y: 42 },
-      { key: "birch", scale: 0.72, parallax: 0.7, alpha: 0.58, y: 36 },
-      { key: "oak", scale: 1.08, parallax: 0.84, alpha: 0.78, y: 26 },
-      { key: "birch", scale: 0.92, parallax: 0.88, alpha: 0.82, y: 24 },
-      { key: "willow", scale: 1.0, parallax: 0.86, alpha: 0.76, y: 30 }
-    ];
-    const sprites = [];
-    let index = 0;
-
-    for (let x = Core.WORLD_MIN + 170; x <= Core.WORLD_MAX - 170; x += 185) {
-      const item = pattern[index % pattern.length];
-      const wobble = Math.sin(index * 18.7) * 72;
-      const gap = Math.abs(x) < 260 ? Math.sign(x || 1) * 230 : 0;
-      sprites.push({
-        key: item.key,
-        x: x + wobble + gap,
-        scale: item.scale + Math.sin(index * 7.3) * 0.08,
-        parallax: item.parallax,
-        alpha: item.alpha,
-        y: item.y + Math.sin(index * 9.1) * 8,
-        flip: index % 3 === 0
-      });
-      index += 1;
-    }
-
-    return sprites;
   }
 
   function saveGame() {
@@ -425,95 +305,11 @@
     return view.width / 2 + (worldX - camera.x * factor);
   }
 
-  function drawTiledImage(image, parallax, y, width, height, alpha) {
-    if (!imageReady(image)) return false;
-    const tileWidth = Math.max(1, Math.round(width));
-    const offset = ((camera.x * parallax) % tileWidth + tileWidth) % tileWidth;
-
-    ctx.save();
-    ctx.globalAlpha = alpha == null ? 1 : alpha;
-    ctx.imageSmoothingEnabled = false;
-    for (let x = -offset - tileWidth; x < view.width + tileWidth; x += tileWidth) {
-      ctx.drawImage(image, Math.round(x), Math.round(y), tileWidth, Math.round(height));
-    }
-    ctx.restore();
-    return true;
-  }
-
-  function drawTiledCrop(image, source, parallax, y, width, height, alpha) {
-    if (!imageReady(image)) return false;
-    const tileWidth = Math.max(1, Math.round(width));
-    const offset = ((camera.x * parallax) % tileWidth + tileWidth) % tileWidth;
-
-    ctx.save();
-    ctx.globalAlpha = alpha == null ? 1 : alpha;
-    ctx.imageSmoothingEnabled = false;
-    for (let x = -offset - tileWidth; x < view.width + tileWidth; x += tileWidth) {
-      ctx.drawImage(
-        image,
-        source.x,
-        source.y,
-        source.width,
-        source.height,
-        Math.round(x),
-        Math.round(y),
-        tileWidth,
-        Math.round(height)
-      );
-    }
-    ctx.restore();
-    return true;
-  }
-
   function getWaterY() {
     return Math.min(view.height - 68, view.ground + Math.max(44, view.height * 0.065));
   }
 
   function drawSky(light) {
-    if (USE_ASSET_SKY && imageReady(scenery.sky)) {
-      const local = state.time % Core.DAY_LENGTH;
-      const orbit = local / Core.DAY_LENGTH;
-      const sunset = 1 - Math.min(1, Math.abs(local - Core.NIGHT_START) / 15);
-
-      ctx.save();
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(scenery.sky, 0, 0, view.width, view.ground + 120);
-      if (imageReady(scenery.redSky)) {
-        ctx.globalAlpha = Math.max(0, sunset) * 0.32;
-        ctx.drawImage(scenery.redSky, 0, 0, view.width, view.ground + 120);
-      }
-      ctx.restore();
-
-      const sunX = view.width * (0.08 + orbit * 0.84);
-      const sunY = view.ground * (0.34 - Math.sin(orbit * Math.PI) * 0.23);
-      ctx.save();
-      ctx.globalAlpha = light;
-      const glow = ctx.createRadialGradient(sunX, sunY, 8, sunX, sunY, 86);
-      glow.addColorStop(0, "rgba(255, 245, 180, 0.92)");
-      glow.addColorStop(0.45, "rgba(255, 235, 160, 0.3)");
-      glow.addColorStop(1, "rgba(255, 235, 160, 0)");
-      ctx.fillStyle = glow;
-      ctx.fillRect(sunX - 90, sunY - 90, 180, 180);
-      ctx.fillStyle = "#fff3b0";
-      ctx.beginPath();
-      ctx.arc(sunX, sunY, 32, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      ctx.save();
-      ctx.globalAlpha = 1 - light;
-      ctx.fillStyle = "#d9e8ff";
-      ctx.beginPath();
-      ctx.arc(view.width - sunX, 78 + Math.sin(orbit * Math.PI) * 80, 26, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "rgba(16, 21, 33, 0.7)";
-      ctx.beginPath();
-      ctx.arc(view.width - sunX - 10, 70 + Math.sin(orbit * Math.PI) * 80, 24, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-      return;
-    }
-
     const top = colorMix("#101521", "#86b9c6", light);
     const mid = colorMix("#1a1b2f", "#d8b16a", light * 0.55);
     const low = colorMix("#252438", "#efd092", light);
@@ -550,7 +346,7 @@
   }
 
   function drawClouds(light) {
-    const readyClouds = scenery.clouds.filter(imageReady);
+    const readyClouds = cloudImages.filter(imageReady);
     if (readyClouds.length) {
       ctx.save();
       ctx.globalAlpha = 0.22 + light * 0.5;
@@ -585,27 +381,6 @@
   }
 
   function drawMountains(light) {
-    const readyMountains = scenery.mountains.filter(imageReady);
-    if (USE_ASSET_MOUNTAINS && readyMountains.length) {
-      const parallax = [0.03, 0.055, 0.085, 0.13];
-      const alpha = [0.5, 0.62, 0.72, 0.86];
-      for (let i = 0; i < readyMountains.length; i += 1) {
-        const image = readyMountains[i];
-        const scale = Math.max(view.width / image.naturalWidth, (view.ground + 150) / image.naturalHeight);
-        const width = image.naturalWidth * scale;
-        const height = image.naturalHeight * scale;
-        const bottom = view.ground + 150 - i * 22;
-        drawTiledImage(image, parallax[i] || 0.08, bottom - height, width, height, alpha[i] == null ? 1 : alpha[i]);
-      }
-
-      ctx.save();
-      ctx.globalAlpha = 0.28 * (1 - light);
-      ctx.fillStyle = "#11172a";
-      ctx.fillRect(0, 0, view.width, view.ground + 120);
-      ctx.restore();
-      return;
-    }
-
     drawRidge(0.13, view.ground - 180, colorMix("#22283a", "#697d80", light), 230, 116);
     drawRidge(0.2, view.ground - 116, colorMix("#263143", "#6f735c", light), 180, 92);
   }
@@ -628,143 +403,24 @@
     ctx.fill();
   }
 
-  function drawForest(light) {
-    ctx.save();
-    ctx.globalAlpha = 0.68;
-    drawTreeLayer(0.28, view.ground - 58, colorMix("#0e1719", "#22342c", light), 78, 138);
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = 0.58;
-    drawTreeLayer(0.42, view.ground - 34, colorMix("#12251f", "#2f4b34", light), 86, 112);
-    ctx.restore();
-
-    drawTreeSprites(light);
-  }
-
-  function treeNoise(value) {
-    return Math.sin(value * 12.9898) * 43758.5453 % 1;
-  }
-
-  function drawTreeLayer(parallax, baseY, color, spacing, height) {
-    ctx.fillStyle = color;
-    const left = -spacing;
-    const right = view.width + spacing;
-    for (let sx = left; sx <= right; sx += spacing) {
-      const world = sx + camera.x * parallax;
-      const n = Math.abs(treeNoise(Math.floor(world / spacing)));
-      const x = sx + n * spacing * 0.42;
-      const h = height * (0.78 + n * 0.5);
-      const block = Math.max(5, Math.round(h / 18));
-
-      ctx.fillRect(Math.round(x - block), Math.round(baseY - h * 0.48), block * 2, Math.round(h * 0.5));
-      drawBlockyCrown(x - h * 0.18, baseY - h * 0.72, h * 0.28, h * 0.34, block, color, n * 29);
-      drawBlockyCrown(x + h * 0.18, baseY - h * 0.7, h * 0.32, h * 0.36, block, color, n * 37);
-      drawBlockyCrown(x, baseY - h * 0.88, h * 0.36, h * 0.34, block, color, n * 43);
-      drawBlockyCrown(x, baseY - h * 0.56, h * 0.42, h * 0.34, block, color, n * 53);
-    }
-  }
-
-  function drawBlockyCrown(cx, cy, rx, ry, block, color, salt) {
-    ctx.fillStyle = color;
-    for (let y = -ry; y <= ry; y += block) {
-      for (let x = -rx; x <= rx; x += block) {
-        const nx = x / rx;
-        const ny = y / ry;
-        if (nx * nx + ny * ny > 1) continue;
-        if (Math.abs(nx) + Math.abs(ny) > 1.26 && treeNoise((cx + x + salt) * 0.037) > 0.25) continue;
-        ctx.fillRect(Math.round(cx + x), Math.round(cy + y), block + 1, block + 1);
-      }
-    }
-  }
-
-  function drawTreeSprites(light) {
-    const tint = colorMix("#111a18", "#2c3f33", light);
-
-    for (const tree of forestSprites) {
-      const image = treeAssets[tree.key];
-      if (!imageReady(image)) continue;
-
-      const x = screenX(tree.x, tree.parallax);
-      const scale = tree.scale;
-      const width = image.naturalWidth * scale;
-      const height = image.naturalHeight * scale;
-      if (x < -width - 80 || x > view.width + width + 80) continue;
-
-      const y = view.ground - height + tree.y;
-
-      ctx.save();
-      ctx.globalAlpha = tree.alpha;
-      ctx.imageSmoothingEnabled = false;
-      ctx.translate(Math.round(x), Math.round(y));
-      ctx.scale(tree.flip ? -1 : 1, 1);
-      ctx.drawImage(image, Math.round(-width / 2), 0, Math.round(width), Math.round(height));
-
-      ctx.globalCompositeOperation = "source-atop";
-      ctx.globalAlpha = (1 - light) * 0.42;
-      ctx.fillStyle = tint;
-      ctx.fillRect(Math.round(-width / 2), 0, Math.round(width), Math.round(height));
-      ctx.restore();
-    }
-  }
-
   function drawGround(light) {
     const waterY = getWaterY();
-    if (USE_ASSET_TERRAIN && imageReady(scenery.tiles)) {
-      const dirt = colorMix("#1b1612", "#4d3f28", light);
-      const shadowDirt = colorMix("#15100e", "#34291e", light);
-      ctx.fillStyle = shadowDirt;
-      ctx.fillRect(0, view.ground - 18, view.width, waterY - view.ground + 40);
-      ctx.fillStyle = dirt;
-      ctx.fillRect(0, view.ground + 20, view.width, waterY - view.ground + 20);
-
-      drawTiledCrop(
-        scenery.tiles,
-        { x: 0, y: 128, width: 256, height: 64 },
-        1,
-        view.ground - 18,
-        512,
-        waterY - view.ground + 46,
-        1
-      );
-
-      ctx.save();
-      ctx.globalAlpha = 0.16 + light * 0.16;
-      ctx.fillStyle = "#d0b26c";
-      for (let x = -40; x < view.width + 40; x += 54) {
-        const y = view.ground + 14 + Math.sin((x + camera.x) * 0.025) * 4;
-        ctx.fillRect(Math.round(x), Math.round(y), 28, 3);
-      }
-      ctx.restore();
-
-      drawRiverBase(light, waterY);
-      return;
-    }
-
-    if (USE_CUSTOM_LAND_ASSET && imageReady(landAssets.strip)) {
-      drawGrasslandAsset(light);
-      drawRiverBase(light, waterY);
-      return;
-    }
-
     const dirt = colorMix("#211811", "#56412c", light);
     const deepDirt = colorMix("#17110d", "#37281d", light);
     const grass = colorMix("#243d22", "#6f8e3e", light);
-    const grassLight = colorMix("#5f7b34", "#b6c862", light);
     const grassDark = colorMix("#172816", "#3f5a2c", light);
 
     ctx.fillStyle = deepDirt;
-    ctx.fillRect(0, view.ground + 28, view.width, view.height - view.ground - 28);
+    ctx.fillRect(0, view.ground + 22, view.width, Math.max(0, waterY - view.ground + 28));
 
     ctx.fillStyle = dirt;
     ctx.beginPath();
     ctx.moveTo(0, view.ground + 8);
     for (let x = 0; x <= view.width + 24; x += 24) {
-      const y = view.ground + 8 + Math.sin((x + camera.x * 0.65) * 0.018) * 3;
-      ctx.lineTo(x, y);
+      ctx.lineTo(x, view.ground + 8 + Math.sin((x + camera.x * 0.65) * 0.018) * 3);
     }
-    ctx.lineTo(view.width, view.height);
-    ctx.lineTo(0, view.height);
+    ctx.lineTo(view.width, waterY + 18);
+    ctx.lineTo(0, waterY + 18);
     ctx.closePath();
     ctx.fill();
 
@@ -775,145 +431,18 @@
     ctx.beginPath();
     ctx.moveTo(0, view.ground - 10);
     for (let x = 0; x <= view.width + 20; x += 20) {
-      const y = view.ground - 10 + Math.sin((x + camera.x) * 0.024) * 3;
-      ctx.lineTo(x, y);
+      ctx.lineTo(x, view.ground - 10 + Math.sin((x + camera.x) * 0.024) * 3);
     }
     ctx.lineTo(view.width, view.ground + 10);
     ctx.lineTo(0, view.ground + 10);
     ctx.closePath();
     ctx.fill();
 
-    ctx.save();
-    ctx.strokeStyle = grassLight;
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.45 + light * 0.25;
-    for (let x = -40; x < view.width + 40; x += 18) {
-      const seed = Math.sin((x + camera.x) * 0.11);
-      const bladeHeight = 7 + Math.abs(seed) * 10;
-      const baseY = view.ground - 7 + Math.sin((x + camera.x) * 0.032) * 3;
-      ctx.beginPath();
-      ctx.moveTo(x, baseY);
-      ctx.lineTo(x + seed * 5, baseY - bladeHeight);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = 0.18 + light * 0.16;
-    ctx.fillStyle = "#8a6c43";
-    for (let x = -20; x < view.width + 40; x += 38) {
-      const y = view.ground + 24 + Math.sin((x + camera.x) * 0.03) * 4;
-      ctx.fillRect(Math.round(x), Math.round(y), 17, 3);
-    }
-    ctx.restore();
-
     drawRiverBase(light, waterY);
   }
 
-  function drawGrasslandAsset(light) {
-    const land = prepareLandStrip();
-    if (!land) return;
-
-    const scale = land.scale;
-    const tileWidth = land.sourceWidth * scale;
-    const tileHeight = land.sourceHeight * scale;
-    const y = view.ground - land.surfaceY * scale + 2;
-    const offset = ((camera.x) % tileWidth + tileWidth) % tileWidth;
-
-    ctx.fillStyle = colorMix("#17120e", "#312319", light);
-    ctx.fillRect(0, y + tileHeight - 8, view.width, Math.max(0, view.height - y - tileHeight + 8));
-
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    for (let x = -offset - tileWidth; x < view.width + tileWidth; x += tileWidth) {
-      ctx.drawImage(
-        land.image,
-        land.sourceX,
-        land.sourceY,
-        land.sourceWidth,
-        land.sourceHeight,
-        Math.round(x),
-        Math.round(y),
-        Math.round(tileWidth),
-        Math.round(tileHeight)
-      );
-    }
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = 0.06 + (1 - light) * 0.34;
-    ctx.fillStyle = "#080c15";
-    ctx.fillRect(0, view.ground + 14, view.width, view.height - view.ground - 14);
-    ctx.restore();
-  }
-
-  function prepareLandStrip() {
-    const strip = landAssets.strip;
-    if (!imageReady(strip)) return null;
-
-    const key = `${strip.naturalWidth}x${strip.naturalHeight}`;
-    if (landAssets.prepared && landAssets.preparedKey === key) return landAssets.prepared;
-
-    const largePaintedStrip = strip.naturalWidth > 900 || strip.naturalHeight > 260;
-    const sourceTop = largePaintedStrip ? Math.round(strip.naturalHeight * LAND_LARGE_SOURCE_TOP_RATIO) : 0;
-    const sourceBottom = largePaintedStrip ? Math.round(strip.naturalHeight * LAND_LARGE_SOURCE_BOTTOM_RATIO) : strip.naturalHeight;
-    const sourceHeight = Math.max(1, sourceBottom - sourceTop);
-    const surfaceY = largePaintedStrip
-      ? Math.max(1, Math.round(strip.naturalHeight * LAND_LARGE_SURFACE_RATIO) - sourceTop)
-      : LAND_SURFACE_SOURCE_Y;
-    const rawScale = largePaintedStrip ? LAND_LARGE_TARGET_HEIGHT / sourceHeight : LAND_STRIP_SCALE;
-    const scale = largePaintedStrip ? Math.max(0.25, Math.min(1, Math.round(rawScale * 4) / 4)) : rawScale;
-
-    const image = largePaintedStrip
-      ? makeTransparentLandCanvas(strip, Math.round(strip.naturalHeight * LAND_LARGE_SURFACE_RATIO), sourceBottom)
-      : strip;
-
-    landAssets.prepared = {
-      image,
-      sourceX: 0,
-      sourceY: sourceTop,
-      sourceWidth: strip.naturalWidth,
-      sourceHeight,
-      surfaceY,
-      scale
-    };
-    landAssets.preparedKey = key;
-    return landAssets.prepared;
-  }
-
-  function makeTransparentLandCanvas(image, grassBottomY, dirtBottomY) {
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const buffer = canvas.getContext("2d");
-    buffer.imageSmoothingEnabled = false;
-    buffer.drawImage(image, 0, 0);
-
-    try {
-      const imageData = buffer.getImageData(0, 0, canvas.width, canvas.height);
-      const pixels = imageData.data;
-      for (let y = 0; y < canvas.height; y += 1) {
-        const canClearBlack = y < grassBottomY || y > dirtBottomY;
-        if (!canClearBlack) continue;
-
-        for (let x = 0; x < canvas.width; x += 1) {
-          const index = (y * canvas.width + x) * 4;
-          const r = pixels[index];
-          const g = pixels[index + 1];
-          const b = pixels[index + 2];
-          if (r < 42 && g < 42 && b < 42) pixels[index + 3] = 0;
-        }
-      }
-      buffer.putImageData(imageData, 0, 0);
-    } catch (_error) {
-      return image;
-    }
-
-    return canvas;
-  }
-
   function drawRiverBase(light, waterY) {
-    if (!USE_REFLECTIVE_RIVER || waterY >= view.height - 12) return;
+    if (waterY >= view.height - 12) return;
 
     const waterGradient = ctx.createLinearGradient(0, waterY - 12, 0, view.height);
     waterGradient.addColorStop(0, colorMix("#23302c", "#607b70", light));
@@ -928,7 +457,7 @@
     ctx.fillStyle = colorMix("#4a3424", "#977345", light);
     for (let x = -80; x < view.width + 90; x += 34) {
       const world = x + camera.x;
-      const y = waterY - 12 + Math.sin(world * 0.035) * 3;
+      const y = waterY - 10;
       const width = 18 + Math.abs(Math.sin(world * 0.071)) * 26;
       ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), 5);
     }
@@ -952,14 +481,13 @@
     ctx.globalAlpha = 0.34;
     ctx.fillStyle = "#100d0b";
     for (let x = -40; x < view.width + 40; x += 22) {
-      const y = waterY - 2 + Math.sin((x + camera.x) * 0.052) * 2;
+      const y = waterY - 2;
       ctx.fillRect(Math.round(x), Math.round(y), 11 + (x % 3) * 3, 2);
     }
     ctx.restore();
   }
 
   function drawRiverEffects(light) {
-    if (!USE_REFLECTIVE_RIVER) return;
     const waterY = getWaterY();
     if (waterY >= view.height - 12) return;
 
@@ -968,9 +496,10 @@
   }
 
   function drawRiverReflection(light, waterY) {
-    const sourceHeight = Math.min(RIVER_REFLECTION_SOURCE_HEIGHT, Math.max(96, waterY - 32));
-    const sourceY = Math.max(0, Math.round(waterY - sourceHeight));
-    const capturedHeight = Math.min(sourceHeight, waterY - sourceY);
+    const sourceBottom = Math.max(1, Math.round(view.ground - 8));
+    const sourceHeight = Math.min(RIVER_REFLECTION_SOURCE_HEIGHT, Math.max(96, sourceBottom - 24));
+    const sourceY = Math.max(0, Math.round(sourceBottom - sourceHeight));
+    const capturedHeight = Math.min(sourceHeight, sourceBottom - sourceY);
     const waterDepth = view.height - waterY;
     if (capturedHeight <= 0 || waterDepth <= 0) return;
 
@@ -995,9 +524,9 @@
       capturedHeight
     );
 
-    const reflectedHeight = Math.min(capturedHeight * 0.72, waterDepth + 96);
+    const reflectedHeight = Math.min(capturedHeight * 0.56, waterDepth + 64);
     const squash = reflectedHeight / capturedHeight;
-    const shimmer = state.time * 2.1;
+    const shimmer = state.time * 0.72;
 
     ctx.save();
     ctx.beginPath();
@@ -1008,11 +537,11 @@
     for (let sy = 0; sy < capturedHeight; sy += RIVER_REFLECTION_SLICE_HEIGHT) {
       const sliceHeight = Math.min(RIVER_REFLECTION_SLICE_HEIGHT, capturedHeight - sy);
       const depth = (capturedHeight - sy) / capturedHeight;
-      const dy = waterY + (capturedHeight - sy - sliceHeight) * squash;
-      const wave = Math.sin(shimmer + sy * 0.095) * (2 + depth * 5);
-      const drift = Math.sin(camera.x * 0.009 + sy * 0.041) * (1 + depth * 4);
+      const dy = waterY + 12 + (capturedHeight - sy - sliceHeight) * squash;
+      const wave = Math.sin(shimmer + sy * 0.095) * (0.6 + depth * 1.8);
+      const drift = Math.sin(camera.x * 0.006 + sy * 0.041) * (0.4 + depth * 1.4);
       const dx = Math.round(wave + drift);
-      const alpha = (0.06 + depth * 0.18) * (0.55 + light * 0.45);
+      const alpha = (0.04 + depth * 0.12) * (0.55 + light * 0.45);
 
       ctx.globalAlpha = alpha;
       ctx.drawImage(
@@ -1044,53 +573,29 @@
     ctx.clip();
     ctx.imageSmoothingEnabled = false;
 
-    ctx.globalAlpha = 0.2 + light * 0.18;
+    ctx.globalAlpha = 0.14 + light * 0.1;
     ctx.fillStyle = colorMix("#a7c5b5", "#d9f1d6", light);
-    for (let i = 0; i < 54; i += 1) {
-      const x = (i * 71 + state.time * 18 - camera.x * 0.38) % (view.width + 120) - 60;
-      const y = waterY + 8 + (i % 8) * Math.max(8, waterDepth / 10) + Math.sin(state.time * 1.4 + i) * 2;
+    for (let i = 0; i < 38; i += 1) {
+      const x = (i * 91 + state.time * 4 - camera.x * 0.24) % (view.width + 120) - 60;
+      const y = waterY + 22 + (i % 7) * Math.max(9, waterDepth / 9);
       const width = 10 + (i % 5) * 9;
       ctx.fillRect(Math.round(x), Math.round(y), width, 2);
       if (i % 4 === 0) ctx.fillRect(Math.round(x + width + 5), Math.round(y + 1), 8, 1);
     }
 
-    ctx.globalAlpha = 0.22 + light * 0.2;
+    ctx.globalAlpha = 0.14 + light * 0.14;
     ctx.fillStyle = colorMix("#ddc078", "#fff0a3", light);
-    for (let i = 0; i < 24; i += 1) {
-      const x = (i * 113 + state.time * 32 - camera.x * 0.24) % (view.width + 90) - 45;
-      const y = waterY + 18 + (i % 6) * Math.max(10, waterDepth / 8);
+    for (let i = 0; i < 16; i += 1) {
+      const x = (i * 139 + state.time * 6 - camera.x * 0.18) % (view.width + 90) - 45;
+      const y = waterY + 34 + (i % 5) * Math.max(12, waterDepth / 7);
       ctx.fillRect(Math.round(x), Math.round(y), 4 + (i % 3) * 4, 2);
     }
 
-    ctx.globalAlpha = 0.28 + light * 0.18;
+    ctx.globalAlpha = 0.2 + light * 0.12;
     ctx.fillStyle = colorMix("#182322", "#425d52", light);
     for (let x = -30; x < view.width + 40; x += 26) {
-      const y = waterY + Math.sin((x + camera.x + state.time * 20) * 0.035) * 2;
+      const y = waterY + 2;
       ctx.fillRect(Math.round(x), Math.round(y), 16, 2);
-    }
-
-    ctx.restore();
-  }
-
-  function drawDecorationLayer(layer, light) {
-    if (!USE_ASSET_PROPS) return;
-
-    ctx.save();
-    ctx.globalAlpha = layer === "back" ? 0.82 : 1;
-    for (const decoration of terrainDecorations) {
-      if (decoration.layer !== layer) continue;
-      const image = scenery.props[decoration.key];
-      if (!imageReady(image)) continue;
-
-      const x = screenX(decoration.x, layer === "back" ? 0.94 : 1);
-      const scale = decoration.scale;
-      const width = image.naturalWidth * scale;
-      const height = image.naturalHeight * scale;
-      if (x < -width - 80 || x > view.width + width + 80) continue;
-
-      const groundOffset = decoration.key.startsWith("tree") || decoration.key === "house" || decoration.key === "shed" ? 6 : 2;
-      const y = view.ground - height + groundOffset;
-      ctx.drawImage(image, Math.round(x - width / 2), Math.round(y), Math.round(width), Math.round(height));
     }
 
     ctx.restore();
@@ -1703,9 +1208,7 @@
     drawSky(light);
     drawClouds(light);
     drawMountains(light);
-    drawForest(light);
     drawGround(light);
-    drawDecorationLayer("back", light);
     drawDust(light);
 
     if (TERRAIN_FOCUS_MODE) {
@@ -1730,7 +1233,6 @@
     }
 
     drawRiverEffects(light);
-    drawDecorationLayer("front", light);
 
     if (!TERRAIN_FOCUS_MODE) {
       for (const shot of state.shots) drawShot(shot);
